@@ -2,12 +2,14 @@ import { useState } from 'react'
 
 import './App.css'
 
+
 import Selector from './Selector'
 
 function App() {
 
   const [moneda, setMoneda] = useState('')
   const [cripto, setCripto] = useState('')
+  const [cargando, setCargando] = useState(false)
 
   const [isValidInput, setIsValidInput] = useState(false)
 
@@ -16,7 +18,7 @@ function App() {
       <div className='contenedor'>
         <img src= "../img/imagen-criptos.png"/>
       </div>
-      <div className='contenedor'>
+      <div className='contenedor sel'>
         <Selector
           moneda = {moneda}
           setMoneda = {setMoneda}
@@ -24,6 +26,8 @@ function App() {
           setCripto = {setCripto}
           isValidInput = {isValidInput}
           setIsValidInput = {setIsValidInput}
+          cargando = {cargando}
+          setCargando = {setCargando}
           />
       </div>
       

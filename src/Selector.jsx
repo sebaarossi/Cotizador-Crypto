@@ -1,12 +1,27 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 import Alert from "./Alert"
 import Result from "./Result"
+import Spinner from "./Spinner"
+import { monedas } from "./data/monedas"
 
-const Selector = ({moneda, setMoneda, cripto, setCripto, isValidInput, setIsValidInput}) => {
+import useSelectMonedas from "./hooks/useSelectMonedas"
 
+const Selector = ({moneda, setMoneda, cripto, setCripto, isValidInput, setIsValidInput, cargando, setCargando}) => {
+
+
+    const [criptos, setCriptos] = useState([])
+
+    const [SelectMonedas] = useSelectMonedas()
 
     const [alert, setAlert] = useState(false)
+
+    const [precio, setPrecio] = useState(0)
+    const [precioAlto, setPrecioAlto] = useState(0)
+    const [precioBajo, setPrecioBajo] = useState(0)
+    const [variacion, setVariacion] = useState()
+    const [fecha, setFecha] = useState()
+    const [image, setImage] = useState('')
 
     const handleSubmitForm = (e) => {
         e.preventDefault()
@@ -17,6 +32,7 @@ const Selector = ({moneda, setMoneda, cripto, setCripto, isValidInput, setIsVali
         }else{
             setAlert(false)
             setIsValidInput(true)
+            consultarValores(moneda, cripto)
         }
     }
 
@@ -30,7 +46,55 @@ const Selector = ({moneda, setMoneda, cripto, setCripto, isValidInput, setIsVali
         setMoneda(e.target.value)
     }
 
-    
+    const consultarValores = async (moneda, cripto) => {
+
+        setCargando(true)
+
+        const url = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${cripto}&tsyms=${moneda}`
+        
+        const response = await fetch(url)
+
+        const respuesta = await response.json()
+
+
+        setPrecio(respuesta.DISPLAY[cripto][moneda].PRICE)
+        setPrecioAlto(respuesta.DISPLAY[cripto][moneda].HIGHDAY)
+        setPrecioBajo(respuesta.DISPLAY[cripto][moneda].LOWDAY)
+        setVariacion(respuesta.DISPLAY[cripto][moneda].CHANGEDAY)
+        setFecha(Date.now())
+        setImage(respuesta.DISPLAY[cripto][moneda].IMAGEURL)
+
+        setTimeout(() => {
+            setCargando(false)
+        },1500)
+        
+
+    }
+
+    useEffect(() => {
+        const consultarAPI = async () => {
+            const url = "https://min-api.cryptocompare.com/data/top/totalvolfull?limit=10&tsym=USD"
+
+            const respuesta = await fetch(url)
+
+            const resultado = await respuesta.json()
+
+
+            const arrayCryptos = resultado.Data.map(cripto => {
+                
+                const objeto = {
+                    id : cripto.CoinInfo.Name,
+                    name: cripto.CoinInfo.FullName,
+                }
+                
+                return objeto
+            })
+
+            
+            setCriptos(arrayCryptos)
+        }
+        consultarAPI();
+    }, [])
 
   return (
     <div>
@@ -42,10 +106,15 @@ const Selector = ({moneda, setMoneda, cripto, setCripto, isValidInput, setIsVali
                 <select className="selector"
                         onChange={handleChangeMoneda}>
                     <option value=''> -- Seleccione -- </option>
-                    <option>Dolar</option>
-                    <option>Euro</option>
-                    <option>Libra</option>
-                    <option>Peso Argentino</option>
+                    {monedas.map(moneda => {
+                        return (
+                            <option
+                                key= {moneda.id}
+                                value={moneda.id}>
+                            {moneda.nombre}   
+                            </option>
+                        )
+                    })}
                 </select>
             </div>
             <div className="campo">
@@ -53,10 +122,15 @@ const Selector = ({moneda, setMoneda, cripto, setCripto, isValidInput, setIsVali
                 <select className="selector"
                     onChange={handleChangeCripto}>
                     <option value=''> -- Seleccione -- </option>
-                    <option value="bitcoin">Bitcoin</option>
-                    <option value="ethereum">Ethereum</option>
-                    <option value="dogecoin">Dogecoin</option>
-                    <option value="optimism">Optimism</option>
+                    {criptos.map(cripto => {
+                        return (
+                            <option
+                                key= {cripto.id}
+                                value={cripto.id}>
+                            {cripto.name}   
+                            </option>
+                        )
+                    })}
                 </select>
             </div>
 
@@ -66,12 +140,23 @@ const Selector = ({moneda, setMoneda, cripto, setCripto, isValidInput, setIsVali
             }
             <button type="submit" className="cot-button">Cotizar</button>            
         </form>
-        {isValidInput ? (
+        {(isValidInput && cargando ) ? (
+            <div className="spinner">
+                <Spinner />
+            </div>
+            
+        ) : (isValidInput ? (
             <Result 
             cripto = {cripto}
             moneda = {moneda}
+            precio = {precio}
+            precioAlto = {precioAlto}
+            precioBajo = {precioBajo}
+            variacion = {variacion}
+            fecha = {fecha}
+            image = {image}
             />
-        ) : null}
+        ) : null)}
     </div>
   )
 }
